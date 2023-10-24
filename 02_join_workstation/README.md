@@ -12,5 +12,5 @@ to set the DNS to the Windows Server
 
 2. Join the workstation to the Domain via Powershell
 ```shell
-add-computer -domainname xyz.com -Credential AD\Administrator -restart -force
+add-computer -domainname xyz.com -Credential xyz\Administrator -restart -force
 ```
