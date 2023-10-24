@@ -14,3 +14,5 @@ to set the DNS to the Windows Server
 ```shell
 add-computer -domainname xyz.com -Credential xyz\Administrator -restart -force
 ```
+
+Note: Be sure to snapshot your VMs as you progress
