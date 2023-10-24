@@ -15,3 +15,6 @@ import-Module ADDSDeployment
 ```shell
 Install-ADDSForest
 ```
+
+3. Reset DNS servers to IP address of Windows server
+    - Use sconfig to reset DNS from loopback (127.0.0.1) to IP address of Windows server
