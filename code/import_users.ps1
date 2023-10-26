@@ -67,6 +67,7 @@ foreach ($User in $Users) {
         Department = $Department
         MobilePhone = $Mobile
         AccountPassword = (ConvertTo-SecureString $Password -AsPlainText -Force)
+        Enabled = $true
     }
 
     try {
