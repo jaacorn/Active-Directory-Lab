@@ -20,7 +20,7 @@ Note: Be sure to snapshot your VMs as you progress
 # Extra
 
 1. Setting up a 3rd "Management" pc that is not joined to the domain
-2. Setting up PSSession for easy managment of the Domain Controller from the Management PC
+2. Setting up PSRemote Session for easy managment of the Domain Controller from the Management PC
     - ```Start-Service WinRM```
     - ```set-item wsman:\localhost\Client\TrustedHosts -value IP_OF_SERVER```
     - ```New-PSSession -ComputerName IP_OF_SERVER -Credential (Get-Credential)```
