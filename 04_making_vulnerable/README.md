@@ -1,1 +1,0 @@
-# 04 - Making our Active Directory Domain vulnerable with random users and weak passwords
