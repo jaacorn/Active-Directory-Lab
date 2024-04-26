@@ -1,17 +1,51 @@
-# Custom script to import custom csv file of users
+# Custom script to impoot csv file of users
+#
+# You will need to edit certain lines to customize for your own company, OUs, and Security Groups
+#
+# 04/21/2024 - May god be with us all, cuz idk what the fuck i'm doing
 
-$Csvfile = "C:\Scripts\ad_users.csv"
+# Custom Variables
+$DomainName = "jlab.lcl" # Enter your domain name including TLD, eg "google.com"
+$CompanyName = "JLAB Technologies" # Enter your company name, this will be used to create the top level custom OU
+
+$DomainNameSplit = $DomainName.split(".")
+$Domain = $DomainNameSplit[0]
+$DomainTLD = $DomainNameSplit[1]
+
+$Csvfile = ".\ad_users.csv"
 $Users = Import-Csv $Csvfile
 
 
-# Create Groups
+# Create Parent OU
+New-ADOrganizationalUnit -Name $CompanyName -Path "DC=$Domain,DC=$DomainTLD"
+New-ADOrganizationalUnit -Name "Users" -Path "OU=$CompanyName,DC=$Domain,DC=$DomainTLD"
+New-ADOrganizationalUnit -Name "Security Groups" -Path "OU=$CompanyName,DC=$Domain,DC=$DomainTLD"
+
+
+# Create OUs
 foreach ($User in $Users) {
-    $Group = $User.'Group'
+    $CustomOU = $User.'OU'
+
+    try {
+    New-ADOrganizationalUnit -Name $CustomOU -Path "OU=Users,OU=$CompanyName,DC=$Domain,DC=$DomainTLD"
+    }
+    catch {
+    # Show error message if failed
+    $ErrorMessage = $_.Exception.Message
+    Write-Warning "Failed to create OU $CustomOU. $_"
+    }
+}
+
+
+# Create Security Groups
+foreach ($User in $Users) {
+    $SecurityGroup = $User.'Department'
     $Scope = "DomainLocal"
 
     $NewGroupParams = @{
-        Name = $Group
+        Name = $SecurityGroup
         GroupScope = $Scope
+        Path = "OU=Security Groups,OU=$CompanyName,DC=$Domain,DC=$DomainTLD"
     }
 
     try {
@@ -25,8 +59,7 @@ foreach ($User in $Users) {
 }
 
 
-
-# Loop through each user
+# Loop through each user, creating the account and assigning them to a Group
 foreach ($User in $Users) {
     $Name = $User.'Name'.split(" ")
     $Firstname = $Name[0]
@@ -34,9 +67,9 @@ foreach ($User in $Users) {
     $Displayname = $User.'Name'
     $InitialSamAccountName = $Firstname[0] + $Lastname
     $SamAccountName = $InitialSamAccountName.ToLower()
-    $InitialUserPrincipalName = "$SamAccountName@xyz.com"
+    $InitialUserPrincipalName = "$SamAccountName@$DomainName"
     $UserPrincipalName = $InitialUserPrincipalName.ToLower()
-    $Email = "$Firstname.$Lastname@xyz.com"
+    $Email = "$Firstname.$Lastname@$DomainName"
     $Street = $User.'Street'
     $City = $User.'City'
     $State = $User.'State'
@@ -46,7 +79,8 @@ foreach ($User in $Users) {
     $Department = $User.'Department'
     $Mobile = $User.'Phone Number'
     $Password = $User.'Password'
-    $Group = $User.'Group'
+    $CustomOU = $User.'OU'
+
 
 
     # Create parameters for each new user
@@ -67,7 +101,9 @@ foreach ($User in $Users) {
         Department = $Department
         MobilePhone = $Mobile
         AccountPassword = (ConvertTo-SecureString $Password -AsPlainText -Force)
+        PasswordNeverExpires = $true
         Enabled = $true
+        Path = "OU=$CustomOU,OU=Users,OU=$CompanyName,DC=$Domain,DC=$DomainTLD"
     }
 
     try {
@@ -83,21 +119,20 @@ foreach ($User in $Users) {
 
 
 
-    # Create parameters for each user to join group
+    # Join each user to their designated group
     $UsertoGroupParams = @{
-        Identity = $Group
+        Identity = $Department
         Members = $SamAccountName
     }
-
 
     try {
         # Add users to groups
         Add-ADGroupMember @UsertoGroupParams
-        Write-Host "User $SamAccountName added successfully to $Group." -ForegroundColor Green
+        Write-Host "User $SamAccountName added successfully to $Department." -ForegroundColor Green
     }
     catch {
         #Show error if failed
         $ErrorMessage = $_.Exception.Message
-        Write-Warning "Failed to add $SamAccountName to $Group. $_"
+        Write-Warning "Failed to add $SamAccountName to $Department. $_"
     }
 }
